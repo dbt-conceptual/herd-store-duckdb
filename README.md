@@ -4,6 +4,8 @@ DuckDB storage adapter for The Herd.
 
 Implements the `StoreAdapter` protocol from `herd-core` for persisting and retrieving Herd domain records (agents, tickets, PRs, decisions, reviews, models, sprints) and activity events (lifecycle, ticket state changes, PR activity, reviews, token usage).
 
+Part of [The Herd](https://github.com/herd-ag/herd-core) ecosystem.
+
 ## Installation
 
 ```bash

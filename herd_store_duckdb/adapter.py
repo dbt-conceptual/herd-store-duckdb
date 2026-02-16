@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import os
 import typing
 from datetime import datetime, timezone
 from typing import Any
@@ -25,7 +26,6 @@ from herd_core.types import (
     TicketRecord,
     TokenEvent,
 )
-
 
 # Type dispatch registries
 ENTITY_TABLE_MAP: dict[type[Entity], str] = {
@@ -269,7 +269,9 @@ class DuckDBStoreAdapter:
         # Cache resolved type hints per entity type
         self._type_hints_cache: dict[type, dict[str, Any]] = {}
 
-    def _get_type_hints(self, entity_type: type[Entity] | type[Event]) -> dict[str, Any]:
+    def _get_type_hints(
+        self, entity_type: type[Entity] | type[Event]
+    ) -> dict[str, Any]:
         """Get resolved type hints for an entity type, with caching.
 
         Uses typing.get_type_hints() to resolve string annotations from
@@ -279,7 +281,9 @@ class DuckDBStoreAdapter:
             self._type_hints_cache[entity_type] = typing.get_type_hints(entity_type)
         return self._type_hints_cache[entity_type]
 
-    def _ensure_table(self, table_name: str, entity_type: type[Entity] | type[Event]) -> None:
+    def _ensure_table(
+        self, table_name: str, entity_type: type[Entity] | type[Event]
+    ) -> None:
         """Create table if it doesn't exist, or add missing columns if it does.
 
         Args:
@@ -335,7 +339,9 @@ class DuckDBStoreAdapter:
 
         self._initialized_tables.add(table_name)
 
-    def _ensure_columns(self, table_name: str, entity_type: type[Entity] | type[Event]) -> None:
+    def _ensure_columns(
+        self, table_name: str, entity_type: type[Entity] | type[Event]
+    ) -> None:
         """Add any missing columns to an existing table.
 
         When Entity or Event types gain new fields (e.g. HDR-0034 adding
@@ -470,7 +476,10 @@ class DuckDBStoreAdapter:
         return f"WHERE {where_clause}" if where_clause else "", params
 
     def _row_to_entity(
-        self, entity_type: type[Entity] | type[Event], row: tuple, column_names: list[str]
+        self,
+        entity_type: type[Entity] | type[Event],
+        row: tuple,
+        column_names: list[str],
     ) -> Entity | Event:
         """Convert a database row to an entity instance.
 
@@ -533,7 +542,9 @@ class DuckDBStoreAdapter:
 
         qualified_table = f"{self.schema}.{table_name}"
         id_col = _get_column_name(entity_type, "id")
-        sql = f"SELECT * FROM {qualified_table} WHERE {id_col} = ? AND deleted_at IS NULL"
+        sql = (
+            f"SELECT * FROM {qualified_table} WHERE {id_col} = ? AND deleted_at IS NULL"
+        )
 
         result = self.conn.execute(sql, [id]).fetchone()
         if result is None:
@@ -733,3 +744,41 @@ class DuckDBStoreAdapter:
         # Get column names from cursor description
         column_names = [desc[0] for desc in self.conn.description]
         return [self._row_to_entity(event_type, row, column_names) for row in results]
+
+    def storage_info(self) -> dict[str, str | int]:
+        """Return storage metadata for this adapter.
+
+        Provides information about the storage backend's location, size,
+        and last modification time. Used for health checks and monitoring.
+
+        Returns:
+            Dict with keys:
+                - path: Storage location (file path, directory, or empty for in-memory/cloud)
+                - size_bytes: Total storage size in bytes (0 for in-memory/cloud)
+                - last_modified: ISO 8601 UTC timestamp of last modification (empty for in-memory/cloud)
+        """
+        # Handle in-memory databases
+        if self.path == ":memory:":
+            return {
+                "path": ":memory:",
+                "size_bytes": 0,
+                "last_modified": "",
+            }
+
+        # Handle file-based databases
+        try:
+            stat = os.stat(self.path)
+            return {
+                "path": self.path,
+                "size_bytes": stat.st_size,
+                "last_modified": datetime.fromtimestamp(
+                    stat.st_mtime, tz=timezone.utc
+                ).isoformat(),
+            }
+        except FileNotFoundError:
+            # Database file doesn't exist yet (will be created on first write)
+            return {
+                "path": self.path,
+                "size_bytes": 0,
+                "last_modified": "",
+            }

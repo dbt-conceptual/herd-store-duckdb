@@ -59,6 +59,8 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "spawned_by": "spawned_by_agent_instance_code",
         "started_at": "agent_instance_started_at",
         "ended_at": "agent_instance_ended_at",
+        "craft_version": "craft_version_code",
+        "personality_version": "personality_version_code",
     },
     # DecisionRecord → decision_record
     DecisionRecord: {
@@ -66,6 +68,7 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "body": "decision",
         "decision_maker": "decided_by",
         "scope": "decision_type",
+        "ticket_id": "ticket_code",
     },
     # TicketRecord → ticket_def
     TicketRecord: {
@@ -75,6 +78,8 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "status": "ticket_current_status",
         "project": "project_code",
         "acceptance_criteria": "ticket_acceptance_criteria",
+        "tshirt_size": "ticket_tshirt_size",
+        "sprint_id": "current_sprint_code",
     },
     # PRRecord → pr_def
     PRRecord: {
@@ -95,6 +100,8 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "pr_id": "pr_code",
         "reviewer_instance_id": "reviewer_agent_instance_code",
         "verdict": "review_verdict",
+        "round": "review_round",
+        "duration_minutes": "review_duration_minutes",
     },
     # ModelRecord → model_def
     ModelRecord: {
@@ -102,6 +109,10 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "name": "model_code",
         "provider": "model_provider",
         "context_window": "model_context_window",
+        "input_cost_per_token": "model_input_cost_per_m",
+        "output_cost_per_token": "model_output_cost_per_m",
+        "cache_read_cost_per_m": "model_cache_read_cost_per_m",
+        "cache_create_cost_per_m": "model_cache_create_cost_per_m",
     },
     # SprintRecord → sprint_def
     SprintRecord: {
@@ -110,6 +121,7 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "goal": "sprint_goal",
         "started_at": "sprint_started_at",
         "ended_at": "sprint_actual_end_at",
+        "planned_end_at": "sprint_planned_end_at",
     },
     # LifecycleEvent → agent_instance_lifecycle_activity
     LifecycleEvent: {
@@ -125,6 +137,10 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "instance_id": "agent_instance_code",
         "previous_status": "ticket_status",
         "new_status": "ticket_status",
+        "note": "ticket_activity_comment",
+        "sprint_id": "sprint_code",
+        "blocker_ticket_id": "blocker_ticket_code",
+        "handoff_to_agent": "handoff_to_agent_code",
     },
     # PREvent → agent_instance_pr_activity
     PREvent: {
@@ -145,6 +161,7 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "review_id": "review_code",
         "pr_id": "pr_code",
         "detail": "review_activity_detail",
+        "finding_id": "review_finding_code",
     },
     # TokenEvent → agent_instance_token_activity
     TokenEvent: {
@@ -155,6 +172,8 @@ COLUMN_MAP: dict[type[Entity] | type[Event], dict[str, str]] = {
         "output_tokens": "token_output_count",
         "cost_usd": "token_cost_usd",
         "context_utilization": "token_context_utilization_pct",
+        "cache_read_tokens": "token_cache_read_count",
+        "cache_create_tokens": "token_cache_create_count",
     },
 }
 

@@ -40,7 +40,8 @@ def test_agent_record_field_mapping(store: DuckDBStoreAdapter) -> None:
     assert retrieved.ticket_id == "DBC-100"
     assert retrieved.state == AgentState.RUNNING
     assert retrieved.spawned_by == "steve-001"
-    assert retrieved.started_at == datetime(2026, 2, 16, 10, 0, tzinfo=timezone.utc)
+    # DuckDB TIMESTAMP strips timezone info; compare naive datetimes
+    assert retrieved.started_at == datetime(2026, 2, 16, 10, 0)
     assert retrieved.ended_at is None
 
 

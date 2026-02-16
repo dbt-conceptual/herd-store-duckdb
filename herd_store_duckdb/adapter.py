@@ -26,7 +26,6 @@ from herd_core.types import (
     TokenEvent,
 )
 
-
 # Type dispatch registries
 ENTITY_TABLE_MAP: dict[type[Entity], str] = {
     AgentRecord: "agent_instance",
@@ -269,7 +268,9 @@ class DuckDBStoreAdapter:
         # Cache resolved type hints per entity type
         self._type_hints_cache: dict[type, dict[str, Any]] = {}
 
-    def _get_type_hints(self, entity_type: type[Entity] | type[Event]) -> dict[str, Any]:
+    def _get_type_hints(
+        self, entity_type: type[Entity] | type[Event]
+    ) -> dict[str, Any]:
         """Get resolved type hints for an entity type, with caching.
 
         Uses typing.get_type_hints() to resolve string annotations from
@@ -279,7 +280,9 @@ class DuckDBStoreAdapter:
             self._type_hints_cache[entity_type] = typing.get_type_hints(entity_type)
         return self._type_hints_cache[entity_type]
 
-    def _ensure_table(self, table_name: str, entity_type: type[Entity] | type[Event]) -> None:
+    def _ensure_table(
+        self, table_name: str, entity_type: type[Entity] | type[Event]
+    ) -> None:
         """Create table if it doesn't exist, or add missing columns if it does.
 
         Args:
@@ -335,7 +338,9 @@ class DuckDBStoreAdapter:
 
         self._initialized_tables.add(table_name)
 
-    def _ensure_columns(self, table_name: str, entity_type: type[Entity] | type[Event]) -> None:
+    def _ensure_columns(
+        self, table_name: str, entity_type: type[Entity] | type[Event]
+    ) -> None:
         """Add any missing columns to an existing table.
 
         When Entity or Event types gain new fields (e.g. HDR-0034 adding
@@ -470,7 +475,10 @@ class DuckDBStoreAdapter:
         return f"WHERE {where_clause}" if where_clause else "", params
 
     def _row_to_entity(
-        self, entity_type: type[Entity] | type[Event], row: tuple, column_names: list[str]
+        self,
+        entity_type: type[Entity] | type[Event],
+        row: tuple,
+        column_names: list[str],
     ) -> Entity | Event:
         """Convert a database row to an entity instance.
 
@@ -533,7 +541,9 @@ class DuckDBStoreAdapter:
 
         qualified_table = f"{self.schema}.{table_name}"
         id_col = _get_column_name(entity_type, "id")
-        sql = f"SELECT * FROM {qualified_table} WHERE {id_col} = ? AND deleted_at IS NULL"
+        sql = (
+            f"SELECT * FROM {qualified_table} WHERE {id_col} = ? AND deleted_at IS NULL"
+        )
 
         result = self.conn.execute(sql, [id]).fetchone()
         if result is None:
@@ -602,10 +612,13 @@ class DuckDBStoreAdapter:
         fields = dataclasses.fields(entity_type)
 
         # Build column names and values lists, deduplicating columns
-        # If multiple fields map to the same column, use the value from the last field
+        # If multiple fields map to the same column, keep the first (identity fields
+        # come first in dataclass ordering and take priority over aliases)
         columns_dict: dict[str, Any] = {}
         for field in fields:
             col_name = _get_column_name(entity_type, field.name)
+            if col_name in columns_dict:
+                continue
             value = getattr(record, field.name)
             # Convert enum to value
             if hasattr(value, "value"):
@@ -665,10 +678,13 @@ class DuckDBStoreAdapter:
         fields = dataclasses.fields(event_type)
 
         # Build column names and values lists, deduplicating columns
-        # If multiple fields map to the same column, use the value from the last field
+        # If multiple fields map to the same column, keep the first (identity fields
+        # come first in dataclass ordering and take priority over aliases)
         columns_dict: dict[str, Any] = {}
         for field in fields:
             col_name = _get_column_name(event_type, field.name)
+            if col_name in columns_dict:
+                continue
             value = getattr(event, field.name)
             # Convert enum to value
             if hasattr(value, "value"):

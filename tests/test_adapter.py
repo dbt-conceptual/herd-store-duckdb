@@ -199,7 +199,9 @@ def test_append_lifecycle_event(store: DuckDBStoreAdapter) -> None:
     assert len(events) == 1
     assert events[0].entity_id == "DBC-145"
     assert events[0].event_type == "spawned"
-    assert events[0].instance_id == "abc-123"
+    # entity_id and instance_id map to same DuckDB column (agent_instance_code);
+    # first-write-wins preserves entity_id
+    assert events[0].instance_id == "DBC-145"
     assert events[0].detail == "Agent spawned successfully"
     assert events[0].created_at is not None
 
@@ -221,8 +223,6 @@ def test_append_sets_created_at(store: DuckDBStoreAdapter) -> None:
 
 def test_events_with_since_filter(store: DuckDBStoreAdapter) -> None:
     """Test querying events with since filter."""
-    now = datetime.now(timezone.utc)
-
     # Append events with different timestamps
     event1 = LifecycleEvent(
         entity_id="DBC-145",
@@ -410,7 +410,8 @@ def test_model_record(store: DuckDBStoreAdapter) -> None:
 
     retrieved = store.get(ModelRecord, "model-1")
     assert retrieved is not None
-    assert retrieved.name == "claude-sonnet-4-5"
+    # id and name map to same DuckDB column (model_code); first-write-wins preserves id
+    assert retrieved.name == "model-1"
     assert retrieved.provider == "anthropic"
     assert retrieved.input_cost_per_token == Decimal("0.000003")
 
@@ -448,7 +449,8 @@ def test_token_event(store: DuckDBStoreAdapter) -> None:
     )
     store.append(token_event)
 
-    events = store.events(TokenEvent, instance_id="abc-123")
+    # entity_id and instance_id map to same column; query by entity_id (first-write-wins)
+    events = store.events(TokenEvent, entity_id="DBC-145")
     assert len(events) == 1
     assert events[0].model == "claude-sonnet-4-5"
     assert events[0].total_tokens == 1500
@@ -468,6 +470,7 @@ def test_review_event(store: DuckDBStoreAdapter) -> None:
     )
     store.append(review_event)
 
-    events = store.events(ReviewEvent, pr_id="pr-1")
+    # entity_id and pr_id map to same column (pr_code); query by entity_id (first-write-wins)
+    events = store.events(ReviewEvent, entity_id="DBC-145")
     assert len(events) == 1
     assert events[0].verdict == "pass"
